@@ -3,7 +3,7 @@
  *
  * Esta primera integración está deliberadamente limitada a la tarjeta que se
  * está validando. El proceso ocurre 100% en el navegador y nunca modifica el
- * archivo original de assets/students. Los PNG con transparencia se muestran
+ * archivo original de assets/students. Las imágenes WebP con transparencia se muestran
  * directamente, sin volver a procesar el fondo.
  */
 export function createAutomaticPlayerCutout(stage, src) {
@@ -15,10 +15,10 @@ export function createAutomaticPlayerCutout(stage, src) {
   img.decoding = 'async';
   img.onload = () => {
     try {
-      // Las nuevas fotografías PNG ya vienen recortadas y con transparencia.
+      // Las nuevas fotografías WebP ya vienen recortadas y con transparencia.
       // No debemos volver a procesarlas: el algoritmo de fondo negro puede
       // alterar los bordes del cabello y producir halos/cambios de tono.
-      if (/\.png(?:[?#].*)?$/i.test(src) && hasTransparency(img)) {
+      if (/\.(?:png|webp)(?:[?#].*)?$/i.test(src) && hasTransparency(img)) {
         showOriginalImage(stage, img);
         return;
       }

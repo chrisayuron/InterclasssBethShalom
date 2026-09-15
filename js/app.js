@@ -1778,10 +1778,20 @@ function renderOverview(){
   const el=document.getElementById('catOverview'); if(!el)return;
 
   // Las 5 categorías oficiales siempre se muestran, aunque estén vacías.
-  // Los conteos sí provienen de Firestore.
+  // Un jugador cuenta aquí como PARTICIPANTE si tiene al menos una disciplina
+  // inscrita en su ficha (campo sports/compatibilidad disciplines), no por el
+  // simple hecho de existir en /students. Se cuenta una sola vez por categoría,
+  // aunque participe en varias disciplinas.
   el.innerHTML=TOURNAMENT_CATEGORIES.map(category=>{
-    const teams=publicData.teams.filter(t=>normalizeCategoryKey(t.competitionGroup)===normalizeCategoryKey(category.name)).length;
-    const players=publicData.players.filter(p=>normalizeCategoryKey(p.competitionGroup)===normalizeCategoryKey(category.name)).length;
+    const categoryKey=normalizeCategoryKey(category.name);
+    const teams=publicData.teams.filter(t=>normalizeCategoryKey(t.competitionGroup)===categoryKey).length;
+    const players=publicData.players.filter(p=>{
+      if (normalizeCategoryKey(p.competitionGroup)!==categoryKey) return false;
+      const registeredSports = Array.isArray(p.sports)
+        ? p.sports
+        : (Array.isArray(p.disciplines) ? p.disciplines : []);
+      return registeredSports.some(Boolean);
+    }).length;
     return `<div class="game-card"><div class="game-card-head"><div class="game-icon">🏆</div><h3>${escapeHtml(category.name)}</h3></div><p>${teams} equipo${teams===1?'':'s'} · ${players} jugador${players===1?'':'es'}</p></div>`;
   }).join('');
 }
@@ -2449,11 +2459,11 @@ function studentPhotoPath(student) {
   // No dependemos de Firestore Storage ni de data/blob URLs.
   const stored = String(student.photo || '').trim();
   if (stored && /^(?:\.\/)?assets\/students\//i.test(stored)) {
-    return /\.(?:jpe?g|png|webp)$/i.test(stored) ? stored : `${stored}.png`;
+    return /\.(?:jpe?g|png|webp)$/i.test(stored) ? stored : `${stored}.webp`;
   }
 
   // La extensión se resuelve en la vista mediante onerror/fallback.
-  return `./assets/students/${encodeURIComponent(id)}.png`;
+  return `./assets/students/${encodeURIComponent(id)}.webp`;
 }
 
 function showStudentPhotoPreview(student) {
@@ -2466,7 +2476,7 @@ function showStudentPhotoPreview(student) {
     return;
   }
 
-  const extensions = ['.jpg', '.jpeg', '.png', '.webp'];
+  const extensions = ['.webp', '.png', '.jpg', '.jpeg'];
   let index = 0;
 
   const tryNext = () => {
@@ -2567,7 +2577,7 @@ adminElements.form.addEventListener('submit', async event => {
   try {
     const photoTargetId = editingStudentId || adminElements.idPreview.value.trim();
     const selectedPhoto = photoTargetId
-      ? `assets/students/${photoTargetId}.png`
+      ? `assets/students/${photoTargetId}.webp`
       : '';
 
     if (editingStudentId) {
