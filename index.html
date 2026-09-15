@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invictus 2026 · Interclases Beth Shalom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="crest">BS</div>
+      <div class="brand-text">
+        <div class="kicker">Beth Shalom Gimnasio Campestre</div>
+        <div class="name">INVICTUS 2026</div>
+      </div>
+    </div>
+    <nav id="mainNav">
+      <button class="active" data-view="inicio">Inicio</button>
+      <button data-view="posiciones">Posiciones</button>
+      <button data-view="partidos-publicos">Partidos</button>
+      <button data-view="jugadores">Jugadores</button>
+      <button data-view="admin">Administración</button>
+    </nav>
+      <button type="button" class="header-logout is-hidden" data-logout
+        aria-label="Cerrar sesión" title="Cerrar sesión">
+        <svg class="header-logout-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10 5H5.5A1.5 1.5 0 0 0 4 6.5v11A1.5 1.5 0 0 0 5.5 19H10"></path>
+          <path d="M13 8l4 4-4 4"></path>
+          <path d="M17 12H9"></path>
+        </svg>
+        <span>Cerrar sesión</span>
+      </button>
+
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow"><span class="dot"></span> Beth Shalom Gimnasio Campestre</div>
+    <h1>INTERCLASES<br>PROMOCIÓN <em>INVICTUS</em></h1>
+    <p class="sub">Fútbol, Baloncesto, Vóleibol y Videojuegos dentro de las categorías registradas del torneo. <span id="homePlayersText">—</span> jugadores, un solo torneo, una carta por jugador.</p>
+    <div class="hero-meta">
+      <div class="chip">🏆 <b id="homeSportsCount">—</b> deportes</div>
+      <div class="chip">🎓 <b id="homeCategoriesCount">—</b> categorías</div>
+      <div class="chip">🎮 <b id="homeVideoGamesCount">—</b> videojuegos</div>
+      <div class="chip">👥 <b id="homePlayersCount">—</b> jugadores</div>
+    </div>
+    <div class="credit-row">
+      <div>Personería <b>Invictus 2026</b></div>
+      <div>Organiza: <b>Juan Pablo Mendoza</b> &amp; <b>Sara Sofía Perico</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== INICIO ===================== -->
+<section class="view active" id="view-inicio">
+  <div class="section-head">
+    <div class="tag">Categorías del torneo</div>
+    <h2>Así se divide Beth Shalom</h2>
+    <p>Las categorías y disciplinas que aparecen aquí se construyen con la información registrada en Firestore.</p>
+  </div>
+  <div class="game-grid" style="grid-template-columns:repeat(4,1fr);" id="catOverview"></div>
+</section>
+
+<!-- ===================== POSICIONES ===================== -->
+<section class="view" id="view-posiciones">
+  <div class="section-head">
+    <div class="tag">Tabla de clasificación</div>
+    <h2>Posiciones por categoría</h2>
+    <p>Selecciona la categoría (o la sección, si es Videojuegos) y el deporte. Cada uno mide estadísticas distintas.</p>
+  </div>
+  <div class="tabbar sport" id="sportTabs"></div>
+  <div class="tabbar" id="catTabs"></div>
+  <div class="table-card">
+    <table id="standingsTable"></table>
+  </div>
+</section>
+
+<!-- ===================== PARTIDOS ===================== -->
+<section class="view" id="view-partidos-publicos">
+  <div class="section-head">
+    <div class="tag">Competencia INVICTUS</div>
+    <h2>Partidos</h2>
+    <p>En esta sección aparecerán los enfrentamientos sorteados y programados. Durante las pruebas puede estar vacía.</p>
+  </div>
+
+  <div class="public-match-summary">
+    <div class="public-match-stat">
+      <span class="label">Total</span>
+      <strong id="publicMatchesTotal">0</strong>
+    </div>
+    <div class="public-match-stat">
+      <span class="label">Por programar</span>
+      <strong id="publicMatchesPending">0</strong>
+    </div>
+    <div class="public-match-stat">
+      <span class="label">Programados</span>
+      <strong id="publicMatchesScheduled">0</strong>
+    </div>
+    <div class="public-match-stat">
+      <span class="label">Finalizados</span>
+      <strong id="publicMatchesFinished">0</strong>
+    </div>
+  </div>
+
+  <div class="filters">
+    <select id="publicMatchDisciplineFilter">
+      <option value="">Todas las disciplinas</option>
+    </select>
+    <select id="publicMatchStatusFilter">
+      <option value="">Todos los estados</option>
+      <option value="Por programar">Por programar</option>
+      <option value="Programado">Programado</option>
+      <option value="Finalizado">Finalizado</option>
+      <option value="Cancelado">Cancelado</option>
+    </select>
+  </div>
+
+  <div id="publicMatchesList" class="public-matches-list">
+    <div class="empty">Aún no hay partidos registrados.</div>
+  </div>
+</section>
+
+<!-- ===================== JUGADORES ===================== -->
+<section class="view" id="view-jugadores">
+  <div class="section-head">
+    <div class="tag">El diferenciador</div>
+    <h2>Cartas de jugador</h2>
+    <p>Las tarjetas se construyen con los jugadores públicos registrados y las estadísticas derivadas de los resultados.</p>
+  </div>
+  <div class="filters">
+    <input class="search-box" id="searchPlayer" placeholder="Buscar por nombre...">
+    <select id="filterCat"></select>
+    <select id="filterSport"></select>
+  </div>
+  <div class="card-grid" id="playerGrid"></div>
+</section>
+
+
+<!-- ===================== ADMINISTRACIÓN ===================== -->
+<section class="view admin-view" id="view-admin">
+
+  <div class="section-head">
+    <div class="tag">Gestión del torneo</div>
+    <h2>Administración</h2>
+    <p>Administra los jugadores que participan en INVICTUS 2026.</p>
+  </div>
+
+  <div class="admin-tabs" id="adminTabs">
+    <button class="active" data-admin-section="jugadores">Jugadores</button>
+    <button data-admin-section="deportes">Deportes</button>
+    <button data-admin-section="equipos">Equipos</button>
+    <button data-admin-section="partidos">Partidos</button>
+  </div>
+
+  <div class="admin-section active" id="admin-jugadores">
+
+    <div class="admin-toolbar">
+      <button type="button" class="btn btn-danger-reset reset-action-button" data-reset-test-data>
+  <svg class="reset-danger-icon" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 3 22 20H2L12 3Z"></path>
+    <path d="M12 9v5"></path>
+    <circle cx="12" cy="17" r=".8"></circle>
+  </svg>
+  <span>Reiniciar pruebas</span>
+</button>
+<div>
+        <h3>Jugadores</h3>
+        <p id="studentCount">0 jugadores registrados</p>
+      </div>
+
+      <div class="admin-actions">
+        <button class="admin-btn secondary" id="btnImportStudents" type="button">
+          Importar CSV
+        </button>
+        <button class="admin-btn secondary" id="btnSyncPublicCounters" type="button">
+          Recalcular jugadores
+        </button>
+<button class="admin-btn primary" id="btnAddStudent" type="button">
+          + Agregar jugador
+        </button>
+      </div>
+    </div>
+
+    <div class="student-search">
+      <input
+        type="search"
+        id="adminStudentSearch"
+        placeholder="Buscar por ID, nombre, curso o grupo..."
+        autocomplete="off"
+      >
+    </div>
+
+    <div class="table-card admin-table-card">
+      <div class="table-scroll">
+        <table class="admin-students-table">
+          <thead>
+            <tr>
+              <th>Foto</th>
+              <th>ID</th>
+              <th>Jugador</th>
+              <th>Curso / tipo</th>
+              <th>Grupo</th>
+              <th>Deportes</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+
+          <tbody id="adminStudentsBody">
+            <tr>
+              <td colspan="8" class="empty">Cargando jugadores...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="admin-section" id="admin-deportes">
+    <div class="admin-toolbar">
+      <div>
+        <h3>Deportes y videojuegos</h3>
+        <p>Catálogo oficial de INVICTUS 2026. Esta información es fija y se administra desde el código del sistema.</p>
+      </div>
+    </div>
+
+    <div class="table-card admin-table-card">
+      <div class="table-scroll">
+        <table class="admin-students-table">
+          <thead>
+            <tr>
+              <th>Disciplina</th>
+              <th>Tipo</th>
+              <th>Modalidad</th>
+              <th>Día</th>
+              <th>Formato</th>
+            </tr>
+          </thead>
+          <tbody id="disciplineAdminBody">
+            <tr>
+              <td colspan="5" class="empty">Cargando catálogo oficial...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-section" id="admin-equipos">
+
+    <div class="admin-toolbar">
+      <div>
+        <h3>Equipos</h3>
+        <p>En deportes tradicionales hay un equipo por curso. En videojuegos se crean parejas manualmente y puede haber varias por curso.</p>
+      </div>
+
+      <div class="admin-actions">
+        <button class="admin-btn primary" id="btnAddTeam" type="button">
+          + Crear equipo / pareja
+        </button>
+      </div>
+    </div>
+
+    <div class="table-card admin-table-card">
+      <div class="table-scroll">
+        <table class="admin-students-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Equipo</th>
+              <th>Deporte</th>
+              <th>Curso</th>
+              <th>Integrantes</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="teamAdminBody">
+            <tr>
+              <td colspan="6" class="empty">Cargando equipos...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="admin-section" id="admin-partidos">
+    <div class="admin-toolbar">
+      <div><h3>Partidos</h3><p>INVICTUS determina automáticamente los grupos y genera todas las jornadas de la fase de clasificación. La fecha la asigna posteriormente el administrador.</p></div>
+      <div class="admin-actions"><button class="admin-btn secondary" id="btnDrawMatches" type="button">⚄ Sortear partidos</button><button class="admin-btn primary" id="btnAddMatch" type="button">+ Crear partido</button></div>
+    </div>
+    <div class="match-workflow-notice">
+      <strong>Flujo de partidos</strong>
+      <span>1. Generar fase → 2. Revisar jornadas → 3. Asignar fecha → 4. Registrar resultados → 5. Clasificar</span>
+    </div>
+    <div class="table-card admin-table-card"><div class="table-scroll">
+      <table class="admin-students-table"><thead><tr><th>ID</th><th>Disciplina</th><th>Categoría</th><th>Enfrentamiento</th><th>Fecha</th><th>Estado</th><th>Marcador</th><th>Acciones</th></tr></thead>
+      <tbody id="matchAdminBody"><tr><td colspan="8" class="empty">Cargando partidos...</td></tr></tbody></table>
+    </div></div>
+  </div>
+
+
+
+
+
+</section>
+
+<!-- Modal: agregar / editar estudiante -->
+<div class="modal-overlay" id="studentModal">
+
+  <div class="modal-box student-form-modal">
+
+    <button class="modal-close" id="studentModalClose" type="button">✕</button>
+
+    <div class="modal-form-head">
+      <div class="tag">Registro</div>
+      <h3 id="studentModalTitle">Agregar jugador</h3>
+      <p>El ID será generado automáticamente por el sistema.</p>
+    </div>
+
+    <form id="studentForm">
+
+      <input type="hidden" id="studentEditId">
+
+      <div class="student-form-grid">
+
+        <div class="form-field">
+          <label for="studentIdPreview">ID</label>
+          <input
+            id="studentIdPreview"
+            type="text"
+            value="Se generará al guardar"
+            readonly
+          >
+        </div>
+
+        <div class="form-field">
+          <label for="studentType">Tipo de jugador *</label>
+          <select id="studentType" required>
+            <option value="Estudiante">Estudiante</option>
+            <option value="Profesor">Profesor</option>
+          </select>
+        </div>
+
+        <div class="form-field" id="studentCourseField">
+          <label for="studentCourse">Curso *</label>
+          <select id="studentCourse" required>
+            <option value="">Seleccionar curso</option>
+            <option value="0">Párvulos</option>
+            <option value="0P">Prekínder</option>
+            <option value="0K">Kínder</option>
+            <option value="0T">Transición</option>
+            <option value="1">1°</option>
+            <option value="2">2°</option>
+            <option value="3">3°</option>
+            <option value="4">4°</option>
+            <option value="5">5°</option>
+            <option value="6">6°</option>
+            <option value="7">7°</option>
+            <option value="8">8°</option>
+            <option value="9">9°</option>
+            <option value="10">10°</option>
+            <option value="11">11°</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="studentFirstName">Nombres *</label>
+          <input
+            id="studentFirstName"
+            type="text"
+            required
+            placeholder="Nombres"
+          >
+        </div>
+
+        <div class="form-field">
+          <label for="studentLastName">Apellidos *</label>
+          <input
+            id="studentLastName"
+            type="text"
+            required
+            placeholder="Apellidos"
+          >
+        </div>
+
+        <div class="form-field">
+          <label for="studentGroup">Grupo de competencia *</label>
+          <select id="studentGroup" required>
+            <option value="">Seleccionar grupo</option>
+            <option value="Preinfantil">Preinfantil</option>
+            <option value="Infantil">Infantil</option>
+            <option value="Prejuvenil">Prejuvenil</option>
+            <option value="Juvenil">Juvenil</option>
+            <option value="Profesores">Profesores</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="studentPhoto">Fotografía</label>
+          <input
+            id="studentPhoto"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+          >
+          <small>La fotografía se sirve desde <strong>assets/students</strong> usando el ID del jugador (por ejemplo, BS001.png). El archivo debe quedar incluido en el proyecto.</small>
+        </div>
+
+      </div>
+
+      <div class="photo-preview-wrap">
+
+        <div class="photo-preview" id="studentPhotoPreview">
+          <span>Foto</span>
+        </div>
+
+        <div>
+          <strong>Vista previa</strong>
+          <p>Recomendado: fotografía de busto.</p>
+        </div>
+
+      </div>
+
+      <div class="form-field checkbox-field">
+        <label>
+          <input id="studentActive" type="checkbox" checked>
+          Jugador activo
+        </label>
+      </div>
+
+      <div class="form-error" id="studentFormError" hidden></div>
+
+      <div class="modal-form-actions">
+        <button class="admin-btn secondary" id="studentCancel" type="button">
+          Cancelar
+        </button>
+
+        <button class="admin-btn primary" type="submit">
+          Guardar jugador
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+<!-- Modal: importación CSV -->
+<div class="modal-overlay" id="studentImportModal">
+
+  <div class="modal-box import-modal">
+
+    <button class="modal-close" id="studentImportClose" type="button">✕</button>
+
+    <div class="modal-form-head">
+      <div class="tag">Carga masiva</div>
+      <h3>Importar jugadores</h3>
+      <p>Selecciona un archivo CSV de Excel. Primero se validará y luego podrás confirmar la importación. Solo necesitas las columnas nombres, apellidos y curso. El sistema reconoce automáticamente archivos separados por coma o punto y coma y calcula el grupo de competencia a partir del curso.</p>
+    </div>
+
+    <div class="import-help">
+      <strong>Columnas requeridas:</strong>
+      <code>nombres,apellidos,curso</code>
+      <p>El grupo no se incluye: INVICTUS lo calcula automáticamente. El ID tampoco se incluye; el sistema lo genera.</p>
+    </div>
+
+    <div class="form-field">
+      <label for="studentCsvFile">Archivo CSV</label>
+      <input id="studentCsvFile" type="file" accept=".csv,text/csv">
+    </div>
+
+    <div id="csvPreview" class="csv-preview">
+      <div class="empty">Selecciona un CSV para mostrar la vista previa.</div>
+    </div>
+
+    <div id="studentImportStatus" class="import-status" aria-live="polite"></div>
+
+    <div class="modal-form-actions">
+      <button class="admin-btn secondary" id="studentImportCancel" type="button">
+        Cancelar
+      </button>
+
+      <button class="admin-btn primary" id="studentImportConfirm" type="button" disabled>
+        Importar jugadores
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="playerModal">
+  <div class="modal-box" id="playerModalContent"></div>
+</div>
+
+<div class="bar3"></div>
+<footer>
+  <div class="foot-inner">
+    <div>Interclases <b>Invictus 2026</b> · Beth Shalom Gimnasio Campestre</div>
+    <div>Prototipo modular — datos locales preparados para migración a Firebase</div>
+  </div>
+</footer>
+
+<script type="module" src="./js/app.js"></script>
+<div class="auth-modal" id="authModal" hidden>
+  <div class="auth-backdrop" data-auth-close></div>
+  <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button class="auth-close" type="button" data-auth-close aria-label="Cerrar">×</button>
+    <div class="auth-kicker">ADMINISTRACIÓN</div>
+    <h2 id="authTitle">Iniciar sesión</h2>
+    <p class="auth-description">Ingresa con la cuenta autorizada para administrar INVICTUS.</p>
+    <form id="authForm" autocomplete="off" novalidate>
+      <div class="form-field"><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" autocomplete="off" required></div>
+      <div class="form-field">
+  <label for="authPassword">Contraseña</label>
+  <div class="auth-password-wrap">
+    <input id="authPassword" type="password" autocomplete="off" required>
+    <button type="button" id="authTogglePassword" class="auth-password-toggle"
+      aria-label="Ver contraseña" aria-pressed="false" title="Ver contraseña">
+      <svg class="password-eye-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M2.5 12s3.5-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.5 5.5-9.5 5.5S2.5 12 2.5 12Z"></path>
+        <circle cx="12" cy="12" r="2.5"></circle>
+      </svg>
+    </button>
+  </div>
+</div>
+      <div class="auth-error" id="authError" role="alert" hidden></div>
+      <button type="submit" class="btn btn-primary auth-submit auth-action-button" id="authSubmit">Iniciar sesión</button>
+    </form>
+  </section>
+</div>
+
+  <div class="auth-modal" id="resetTestDataModal" hidden>
+    <div class="auth-backdrop" data-reset-close></div>
+    <section class="auth-dialog" role="dialog" aria-modal="true"
+      aria-labelledby="resetTestTitle">
+      <button class="auth-close" type="button" data-reset-close
+        aria-label="Cerrar">×</button>
+
+      <div class="auth-kicker">ENTORNO DE PRUEBAS</div>
+      <h2 id="resetTestTitle">Reiniciar todos los datos</h2>
+
+      <p class="auth-description">
+        Esta acción eliminará los datos de prueba y devolverá la numeración
+        de jugadores a BS001.
+      </p>
+
+      <label for="resetConfirmation">Escribe REINICIAR para confirmar</label>
+      <input id="resetConfirmation" type="text" autocomplete="off">
+
+      <div class="auth-error" id="resetError" role="alert" hidden></div>
+
+      <button type="button" class="btn btn-primary auth-submit reset-action-button"
+        id="resetTestButton">
+        <svg class="reset-danger-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3 22 20H2L12 3Z"></path>
+          <path d="M12 9v5"></path>
+          <circle cx="12" cy="17" r=".8"></circle>
+        </svg>
+        <span>Reiniciar todos los datos</span>
+      </button>
+    </section>
+  </div>
+
+
+<!-- Modal: agregar / editar equipo -->
+<div class="modal-overlay" id="teamModal">
+  <div class="modal-box student-form-modal">
+    <button class="modal-close" id="teamModalClose" type="button">✕</button>
+
+    <div class="modal-form-head">
+      <div class="tag">Equipos</div>
+      <h3 id="teamModalTitle">Agregar equipo</h3>
+      <p>El ID será generado automáticamente por el sistema.</p>
+    </div>
+
+    <form id="teamForm">
+      <input type="hidden" id="teamEditId">
+
+      <div class="student-form-grid">
+
+        <div class="form-field">
+          <label for="teamIdPreview">ID</label>
+          <input id="teamIdPreview" type="text"
+            value="Se generará al guardar" readonly>
+        </div>
+
+        <div class="form-field">
+          <label for="teamName">Nombre del equipo *</label>
+          <input id="teamName" type="text" required
+            placeholder="Ej. Halcones">
+        </div>
+
+        <div class="form-field">
+          <label for="teamDiscipline">Disciplina *</label>
+          <select id="teamDiscipline" required>
+            <option value="">Seleccionar disciplina</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="teamCourse">Curso *</label>
+          <select id="teamCourse" required>
+            <option value="">Seleccionar curso</option>
+          </select>
+        </div>
+
+        <input type="hidden" id="teamGroup">
+
+      </div>
+
+      <div class="form-field team-members-field">
+        <div class="team-members-heading">
+          <label>Integrantes</label>
+          <strong id="teamSelectedCount">0 seleccionados</strong>
+        </div>
+
+        <div class="team-member-tools">
+          <input
+            id="teamMemberSearch"
+            type="search"
+            placeholder="Buscar por ID o nombre..."
+            autocomplete="off"
+          >
+          <button type="button" class="admin-btn secondary" id="teamSelectVisible">
+            Seleccionar visibles
+          </button>
+        </div>
+
+        <div class="team-members-list" id="teamMembers">
+          <div class="team-members-empty">Selecciona un grupo para ver jugadores.</div>
+        </div>
+
+        <small>
+          Los jugadores se muestran agrupados por curso y ordenados por apellido. En deportes tradicionales solo puedes crear un equipo por curso; en videojuegos cada equipo es una pareja y pueden existir varias parejas por curso.
+        </small>
+      </div>
+
+      <div class="form-field checkbox-field">
+        <label>
+          <input id="teamActive" type="checkbox" checked>
+          Equipo activo
+        </label>
+      </div>
+
+      <div class="modal-form-actions">
+        <button class="admin-btn secondary" id="teamCancel" type="button">Cancelar</button>
+        <button class="admin-btn primary" type="submit">Guardar equipo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: sorteo automático de partidos -->
+<div class="modal-overlay" id="drawMatchesModal">
+  <div class="modal-box student-form-modal draw-auto-modal">
+    <button class="modal-close" id="drawMatchesClose" type="button">✕</button>
+    <div class="modal-form-head">
+      <div class="tag">Sorteo automático</div>
+      <h3>Sortear partidos</h3>
+      <p>Selecciona la disciplina. INVICTUS organiza los equipos por categoría y genera ida y vuelta; en videojuegos forma las parejas automáticamente.</p>
+    </div>
+    <div class="form-field draw-discipline-field"><label for="drawDiscipline">Disciplina *</label><select id="drawDiscipline"></select></div>
+    <div id="drawPreview" class="draw-groups-preview"><div class="empty">Selecciona una disciplina para ver los grupos disponibles.</div></div>
+    <div class="draw-auto-note"><strong>Importante:</strong> el sorteo no asigna fechas. Después del sorteo, el administrador podrá asignar la fecha de cada partido.</div>
+    <div class="modal-form-actions">
+      <button class="admin-btn secondary" id="drawMatchesCancel" type="button">Cancelar</button>
+      <button class="admin-btn primary" id="drawMatchesRun" type="button">Sortear y guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: asignar fecha -->
+<div class="modal-overlay" id="scheduleMatchModal">
+  <div class="modal-box student-form-modal schedule-match-modal">
+    <button class="modal-close" id="scheduleMatchClose" type="button">✕</button>
+    <div class="modal-form-head">
+      <div class="tag">Programación</div>
+      <h3>Asignar fecha</h3>
+      <p id="scheduleMatchLabel">Selecciona la fecha en que se jugará el partido.</p>
+    </div>
+    <form id="scheduleMatchForm">
+      <input type="hidden" id="scheduleMatchId">
+      <div class="form-field"><label for="scheduleMatchDate">Fecha *</label><input id="scheduleMatchDate" type="date" required></div>
+      <div class="modal-form-actions"><button class="admin-btn secondary" id="scheduleMatchCancel" type="button">Cancelar</button><button class="admin-btn primary" type="submit">Guardar fecha</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: crear / editar partido -->
+<div class="modal-overlay" id="matchModal">
+  <div class="modal-box student-form-modal match-simple-modal">
+    <button class="modal-close" id="matchModalClose" type="button">✕</button>
+    <div class="modal-form-head">
+      <div class="tag">Competencia</div>
+      <h3 id="matchModalTitle">Crear partido</h3>
+      <p>Selecciona la disciplina, la categoría y los dos participantes. El partido quedará listo para registrar su resultado.</p>
+    </div>
+    <form id="matchForm"><input type="hidden" id="matchEditId">
+      <div class="student-form-grid">
+        <div class="form-field"><label for="matchDiscipline">Disciplina *</label><select id="matchDiscipline" required></select></div>
+        <div class="form-field"><label for="matchGroup">Categoría *</label><select id="matchGroup" required></select></div>
+        <div class="form-field"><label for="matchTeamA">Participante A *</label><select id="matchTeamA" required></select></div>
+        <div class="form-field"><label for="matchTeamB">Participante B *</label><select id="matchTeamB" required></select></div>
+      </div>
+      <div class="match-simple-note">
+        <strong>Consejo:</strong> para varios enfrentamientos, usa <b>Sortear partidos</b>. El sistema mezcla los participantes y crea los cruces automáticamente.
+      </div>
+      <div class="modal-form-actions"><button class="admin-btn secondary" id="matchCancel" type="button">Cancelar</button><button class="admin-btn primary" type="submit">Guardar partido</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: registrar resultado -->
+<div class="modal-overlay" id="resultModal">
+  <div class="modal-box student-form-modal result-editor-modal">
+    <button class="modal-close" id="resultModalClose" type="button">✕</button>
+    <div class="modal-form-head">
+      <div class="tag">Resultado</div>
+      <h3>Registrar resultado</h3>
+      <p id="resultMatchLabel">Selecciona el marcador y, cuando corresponda, los anotadores.</p>
+    </div>
+    <form id="resultForm">
+      <input type="hidden" id="resultMatchId">
+      <div class="result-score-editor">
+        <div class="result-team-score">
+          <span id="resultTeamAName">Equipo A</span>
+          <input id="resultScoreA" type="number" min="0" step="1" value="0" required aria-label="Marcador equipo A">
+        </div>
+        <strong>VS</strong>
+        <div class="result-team-score">
+          <input id="resultScoreB" type="number" min="0" step="1" value="0" required aria-label="Marcador equipo B">
+          <span id="resultTeamBName">Equipo B</span>
+        </div>
+      </div>
+
+      <section id="footballGoalEditor" class="goal-editor" hidden>
+        <div class="goal-editor-head">
+          <div><strong>GOLES DEL PARTIDO</strong><small>Registra quién hizo cada anotación.</small></div>
+          <span id="resultGoalsCount" class="result-goals-count">0 anotaciones</span>
+        </div>
+        <div class="goal-add-row">
+          <select id="resultGoalTeam" aria-label="Equipo del gol"><option value="A">Equipo A</option><option value="B">Equipo B</option></select>
+          <select id="resultGoalPlayer" aria-label="Goleador"><option value="">Seleccionar goleador</option></select>
+          <button class="admin-btn primary goal-add-button" id="resultAddGoal" type="button">+ Gol</button>
+        </div>
+        <div id="resultGoalsList" class="result-goals-list"><div class="modal-empty-state">Sin goles registrados.</div></div>
+      </section>
+
+      <section id="resultPlayerStatsEditor" class="match-player-stats-editor" hidden>
+        <div class="match-player-stats-head"><div><strong>Estadísticas individuales</strong><small id="resultPlayerStatsHint">Registra los puntos realizados por cada jugador.</small></div></div>
+        <div id="resultPlayerStatsBody"></div>
+      </section>
+
+      <div class="modal-form-actions"><button class="admin-btn secondary" id="resultCancel" type="button">Cancelar</button><button class="admin-btn primary" type="submit">Guardar resultado</button></div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

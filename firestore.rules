@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {    // =========================
+    // JUGADORES
+    // =========================
+
+    // Fuente única de jugadores. Solo contiene los datos públicos definidos
+    // por INVICTUS: nombre, apellido, tipo, curso/grupo, foto, disciplinas
+    // y estado. La modificación sigue protegida.
+    match /students/{studentId} {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+
+    // =========================
+    // DATOS PÚBLICOS DEL TORNEO
+    // =========================
+
+    match /disciplines/{disciplineId} {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+
+    match /matches/{matchId} {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+
+    match /results/{resultId} {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+
+    match /standings/{standingId} {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+
+    match /statistics/{statisticId} {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+
+    match /schedule/{scheduleId} {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+    // =========================
+    // CONTADORES PÚBLICOS
+    // =========================
+
+    // Solo contiene agregados numéricos.
+    // Lectura pública; escritura autenticada.
+    match /system/publicCounters {
+      allow read: if true;
+      allow create, update, delete:
+        if request.auth != null;
+    }
+
+    // =========================
+    // SISTEMA INTERNO
+    // =========================
+
+    match /system/{document=**} {
+      allow read, write:
+        if request.auth != null;
+    }
+  }
+}
