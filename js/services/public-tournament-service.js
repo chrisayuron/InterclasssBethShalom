@@ -45,6 +45,13 @@ function normalizeKey(value) {
 function normalizeId(value) {
   return String(value ?? '').trim().toUpperCase();
 }
+function normalizePlayerCompetitionGroup(player) {
+  const raw = normalizeKey(player?.competitionGroup);
+  if (player?.playerType === 'Profesor' || ['mayor', 'profesores', 'invitados'].includes(raw)) {
+    return 'Profesional';
+  }
+  return String(player?.competitionGroup || '').trim();
+}
 
 function resolveDisciplineId(value) {
   const raw = value?.disciplineId ?? value?.discipline ?? value?.sportId ?? value?.sport ?? value ?? '';
@@ -93,7 +100,7 @@ export async function getPublicTournamentData() {
 
   const players = playerRows
     .filter(x => x.active !== false)
-    .map(x => ({ ...x, id: normalizeId(x.id) }));
+    .map(x => ({ ...x, id: normalizeId(x.id), competitionGroup: normalizePlayerCompetitionGroup(x) }));
   const disciplines = TOURNAMENT_DISCIPLINES.map(rule => ({ ...rule, active: true }));
   const teams = teamRows
     .filter(x => x.active !== false)
@@ -117,7 +124,7 @@ export async function getPublicTournamentData() {
 export async function getPublicPlayers() {
   return (await readCollectionPublic(COLLECTIONS.students))
     .filter(x => x.active !== false)
-    .map(x => ({ ...x, id: normalizeId(x.id) }));
+    .map(x => ({ ...x, id: normalizeId(x.id), competitionGroup: normalizePlayerCompetitionGroup(x) }));
 }
 
 /**

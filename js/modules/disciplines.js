@@ -38,7 +38,10 @@ export const COURSE_GROUPS = {
   '8°': 'Prejuvenil',
   '9°': 'Profesional',
   '10°': 'Profesional',
-  '11°': 'Profesional'
+  '11°': 'Profesional',
+  'Profesores': 'Profesional',
+  'Invitados': 'Profesional',
+  'Mayor': 'Profesional'
 };
 
 export const COURSE_LABELS = {

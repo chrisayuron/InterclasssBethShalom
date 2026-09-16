@@ -1,4 +1,4 @@
-console.log('[INVICTUS 2026] V20.8 — Rating y experiencia visual en tarjetas.');
+console.log('[INVICTUS 2026] V21.2 — tarjetas accesibles, categoría Profesional y préstamos 9°→10°.');
 import { createAutomaticPlayerCutout } from './services/player-photo-cutout.js';
 import { generateRoundRobinStage } from './tournament.js';
 
@@ -67,6 +67,13 @@ watchAuth(async user => {
 
     if (user) {
       closeAuth();
+
+      // La intención original era abrir Administración. Al completar el
+      // login conservamos explícitamente esa vista y su botón activo.
+      document.querySelectorAll('section.view').forEach(view => view.classList.remove('active'));
+      document.getElementById('view-admin')?.classList.add('active');
+      document.querySelectorAll('#mainNav button').forEach(button => button.classList.remove('active'));
+      document.querySelector('#mainNav [data-view="admin"]')?.classList.add('active');
 
       // El usuario pudo haber abierto Administración antes de que
       // Firebase terminara de resolver la sesión. Cargamos ahora.
@@ -160,8 +167,7 @@ const TOURNAMENT_CATEGORIES = [
   { id: 'preinfantil', name: 'Preinfantil', grades: 'Transición · 1° · 2°' },
   { id: 'infantil', name: 'Infantil', grades: '3° · 4° · 5°' },
   { id: 'prejuvenil', name: 'Prejuvenil', grades: '6° · 7° · 8°' },
-  { id: 'profesional', name: 'Profesional', grades: '9° · 10° · 11°' },
-  { id: 'mayor', name: 'Mayor', grades: 'Profesores · Invitados' }
+  { id: 'profesional', name: 'Profesional', grades: '9° · 10° · 11°' }
 ];
 
 const TOURNAMENT_CATEGORY_NAMES = new Map(
@@ -169,16 +175,20 @@ const TOURNAMENT_CATEGORY_NAMES = new Map(
 );
 
 function normalizeCategoryKey(value) {
-  return String(value ?? '')
+  const key = String(value ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase();
+  if (['mayor', 'profesores', 'invitados'].includes(key)) return 'profesional';
+  return key;
 }
 
 function canonicalCategoryName(value) {
   const key = normalizeCategoryKey(value);
+  const legacyProfessional = new Set(['mayor', 'profesores', 'invitados']);
+  if (legacyProfessional.has(key)) return 'Profesional';
   return TOURNAMENT_CATEGORY_NAMES.get(key) || String(value ?? '').trim();
 }
 
@@ -480,6 +490,24 @@ function displayCourse(course, student = null) {
   return student?.playerType === 'Profesor' ? 'Profesores' : 'Sin curso';
 }
 
+function isEligibleForTraditionalTeam(student, course) {
+  const studentCode = normalizeCourseCode(student?.course);
+  const teamCode = normalizeCourseCode(course);
+
+  if (course === 'Profesores') return student?.playerType === 'Profesor';
+  if (course === 'Invitados') return /invitad/i.test(String(student?.course || ''));
+
+  // Regla especial INVICTUS: estudiantes de 9° pueden ser prestados
+  // para completar equipos de 10°. El equipo sigue perteneciendo a 10°.
+  if (teamCode === '10') return studentCode === '10' || studentCode === '9';
+
+  return studentCode === teamCode;
+}
+
+function isLoanedForTraditionalTeam(student, course) {
+  return normalizeCourseCode(course) === '10' && normalizeCourseCode(student?.course) === '9';
+}
+
 function getEligibleTeamStudents() {
   const course = document.getElementById('teamCourse')?.value || document.getElementById('teamGroup')?.value || '';
   const search = (document.getElementById('teamMemberSearch')?.value || '')
@@ -490,6 +518,8 @@ function getEligibleTeamStudents() {
     .filter(student => student.active !== false)
     .filter(student => {
       if (!course) return false;
+      const rule = tournamentDisciplineFor(document.getElementById('teamDiscipline')?.value || '');
+      if (rule?.type === 'Deporte') return isEligibleForTraditionalTeam(student, course);
       if (course === 'Profesores') return student.playerType === 'Profesor';
       if (course === 'Invitados') return /invitad/i.test(String(student.course || ''));
       return normalizeCourseCode(student.course) === normalizeCourseCode(course);
@@ -556,9 +586,10 @@ function renderTeamMembers(selectedIds = null) {
             : null;
           const unavailable = Boolean(existingTeam);
           const isSelected = selected.has(student.id);
+          const loaned = isLoanedForTraditionalTeam(student, document.getElementById('teamCourse')?.value || '') && isTraditionalSportRule(tournamentDisciplineFor(disciplineId));
           const teamLabel = existingTeam
             ? `Ya pertenece a: ${existingTeam.name || existingTeam.id}`
-            : 'Disponible';
+            : (loaned ? 'Disponible · préstamo de 9°' : 'Disponible');
 
           return `
           <div class="team-member-row${unavailable ? ' is-unavailable' : ''}">
@@ -721,7 +752,7 @@ document.getElementById('teamMemberSearch')?.addEventListener('input', () => {
 document.getElementById('teamCourse')?.addEventListener('change', () => {
   const course = document.getElementById('teamCourse')?.value || '';
   const group = document.getElementById('teamGroup');
-  if (group) group.value = (course === 'Profesores' || course === 'Invitados') ? 'Mayor' : groupForCourse(course);
+  if (group) group.value = (course === 'Profesores' || course === 'Invitados') ? 'Profesional' : groupForCourse(course);
   syncTraditionalTeamName();
   renderTeamMembers([]);
 });
@@ -819,9 +850,7 @@ document.getElementById('teamForm')?.addEventListener('submit', async event => {
   if (rule.type === 'Deporte') {
     const wrongCourse = members.find(id => {
       const student = adminStudents.find(s => normalizeLookup(s.id) === normalizeLookup(id));
-      if (course === 'Profesores') return student?.playerType !== 'Profesor';
-      if (course === 'Invitados') return !/invitad/i.test(String(student?.course || ''));
-      return normalizeCourseCode(student?.course) !== normalizeCourseCode(course);
+      return !isEligibleForTraditionalTeam(student, course);
     });
     if (wrongCourse) {
       window.alert('Todos los integrantes del equipo deben pertenecer al curso seleccionado.');
@@ -914,7 +943,7 @@ document.getElementById('teamForm')?.addEventListener('submit', async event => {
       name,
       disciplineId,
       course,
-      competitionGroup: groupForCourse(course),
+      competitionGroup: (course === 'Profesores' || course === 'Invitados') ? 'Profesional' : groupForCourse(course),
       members,
       goalkeeperIds,
       active
@@ -2291,7 +2320,7 @@ function renderAdminStudents() {
           <small>${escapeHtml(student.firstName || '')}</small>
         </td>
         <td>${escapeHtml(student.playerType === 'Profesor' ? 'Profesor' : (student.course || '—'))}</td>
-        <td>${escapeHtml(student.competitionGroup)}</td>
+        <td>${escapeHtml(canonicalCategoryName(student.competitionGroup))}</td>
         <td><span class="student-sport-count" title="${escapeHtml(sportsTitle || 'Sin disciplinas')}">${sportsCount}</span></td>
         <td>
           <span class="status-pill ${student.active === false ? 'inactive' : ''}">
@@ -2437,7 +2466,7 @@ function updatePlayerTypeUI() {
 
   if (adminElements.group) {
     if (!isStudent) {
-      adminElements.group.value = 'Profesores';
+      adminElements.group.value = 'Profesional';
     } else if (adminElements.course.value) {
       updateGroupFromCourse();
     }
@@ -2593,9 +2622,7 @@ adminElements.form.addEventListener('submit', async event => {
         fullName: `${adminElements.firstName.value.trim()} ${adminElements.lastName.value.trim()}`.trim(),
         playerType: adminElements.playerType?.value || 'Estudiante',
         course: adminElements.playerType?.value === 'Profesor' ? '' : adminElements.course.value,
-        competitionGroup: adminElements.playerType?.value === 'Profesor'
-          ? 'Profesores'
-          : groupForCourse(adminElements.course.value),
+        competitionGroup: 'Profesional',
         sports: selectedDisciplines(),
         photo: selectedPhoto || original.photo || '',
         active: adminElements.active.checked
@@ -2620,7 +2647,7 @@ adminElements.form.addEventListener('submit', async event => {
         playerType: adminElements.playerType?.value || 'Estudiante',
         course: adminElements.playerType?.value === 'Profesor' ? '' : adminElements.course.value,
         competitionGroup: adminElements.playerType?.value === 'Profesor'
-          ? 'Profesores'
+          ? 'Profesional'
           : adminElements.group.value,
         sports: selectedDisciplines(),
         photo: selectedPhoto || '',
@@ -3030,7 +3057,7 @@ adminElements.importConfirm.addEventListener('click', async () => {
         firstName: row.nombres,
         lastName: row.apellidos,
         course,
-        competitionGroup: groupForCourse(course),
+        competitionGroup: (course === 'Profesores' || course === 'Invitados') ? 'Profesional' : groupForCourse(course),
         active: true
       }, ids);
 
