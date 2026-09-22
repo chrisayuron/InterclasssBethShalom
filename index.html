@@ -462,13 +462,13 @@
     <div class="modal-form-head">
       <div class="tag">Carga masiva</div>
       <h3>Importar jugadores</h3>
-      <p>Selecciona un archivo CSV de Excel. Primero se validará y luego podrás confirmar la importación. Solo necesitas las columnas nombres, apellidos y curso. El sistema reconoce automáticamente archivos separados por coma o punto y coma y calcula el grupo de competencia a partir del curso.</p>
+      <p>Selecciona un archivo CSV de Excel. Primero se validará y luego podrás confirmar la importación. Necesitas las columnas nombres, apellidos y curso. La columna tipo es opcional y puede contener Profesor. Para profesores también puedes usar PROF o PROFESORES en la columna curso. El sistema reconoce automáticamente archivos separados por coma o punto y coma y calcula el grupo de competencia a partir del curso.</p>
     </div>
 
     <div class="import-help">
       <strong>Columnas requeridas:</strong>
       <code>nombres,apellidos,curso</code>
-      <p>El grupo no se incluye: INVICTUS lo calcula automáticamente. El ID tampoco se incluye; el sistema lo genera.</p>
+      <p>El grupo no se incluye: INVICTUS lo calcula automáticamente. El ID tampoco se incluye; el sistema lo genera.</p><p><strong>Profesores:</strong> puedes usar <code>PROFESORES</code> en la columna <code>curso</code>, o agregar una columna opcional <code>tipo</code> con el valor <code>Profesor</code>. Ejemplo: <code>nombres,apellidos,curso,tipo</code> → <code>Ana,Martínez,PROFESORES,Profesor</code>.</p>
     </div>
 
     <div class="form-field">

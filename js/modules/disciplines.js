@@ -40,7 +40,13 @@ export const COURSE_GROUPS = {
   '10°': 'Profesional',
   '11°': 'Profesional',
   'Profesores': 'Profesional',
+  'PROF': 'Profesional',
+  'PROFESOR': 'Profesional',
+  'PROFESORES': 'Profesional',
   'Invitados': 'Profesional',
+  'INV': 'Profesional',
+  'INVITADO': 'Profesional',
+  'INVITADOS': 'Profesional',
   'Mayor': 'Profesional'
 };
 
@@ -69,6 +75,18 @@ export function normalizeCourseCode(course) {
   }
 
   const normalized = value.toLocaleLowerCase('es-CO');
+  const specialMap = {
+    'prof': 'Profesores',
+    'profesor': 'Profesores',
+    'profesores': 'Profesores',
+    'docente': 'Profesores',
+    'docentes': 'Profesores',
+    'inv': 'Invitados',
+    'invitado': 'Invitados',
+    'invitados': 'Invitados'
+  };
+  if (specialMap[normalized]) return specialMap[normalized];
+
   const legacyMap = {
     'párvulos': '0',
     'parvulos': '0',

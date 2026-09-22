@@ -1,4 +1,4 @@
-console.log('[INVICTUS 2026] V21.2 — tarjetas accesibles, categoría Profesional y préstamos 9°→10°.');
+console.log('[INVICTUS 2026] V21.3 — equipos por curso y deporte, carga masiva de profesores y categoría Profesional.');
 import { createAutomaticPlayerCutout } from './services/player-photo-cutout.js';
 import { generateRoundRobinStage } from './tournament.js';
 
@@ -293,9 +293,10 @@ function syncTraditionalTeamName() {
   const course = String(courseInput?.value || document.getElementById('teamGroup')?.value || '').trim();
 
   if (isTraditional) {
-    nameInput.value = course;
+    const disciplineName = rule?.name || '';
+    nameInput.value = course && disciplineName ? `${course} - ${disciplineName}` : '';
     nameInput.readOnly = true;
-    nameInput.placeholder = 'Se genera automáticamente según el curso';
+    nameInput.placeholder = 'Se genera automáticamente según el curso y el deporte';
   } else {
     nameInput.readOnly = false;
     nameInput.placeholder = 'Ej. Pareja 1';
@@ -2875,13 +2876,17 @@ function parseStudentsCsv(text) {
     });
 
     const rawCourse = String(row.curso || '').trim();
-    const course = normalizeCourseCode(rawCourse);
+    const rawType = String(row.tipo || '').trim().toLocaleLowerCase('es-CO');
+    const teacherType = ['prof', 'profesor', 'profesora', 'profesores', 'docente', 'docentes'].includes(rawType)
+      || ['prof', 'profesor', 'profesora', 'profesores', 'docente', 'docentes'].includes(rawCourse.toLocaleLowerCase('es-CO'));
+    const course = teacherType ? 'Profesores' : normalizeCourseCode(rawCourse);
 
     return {
       rowNumber: index + 2,
       nombres: row.nombres.trim(),
       apellidos: row.apellidos.trim(),
       curso: course,
+      tipo: teacherType ? 'Profesor' : 'Estudiante',
       grupo: groupForCourse(course)
     };
   });
@@ -2907,6 +2912,7 @@ function renderCsvPreview(rows) {
           <th>Nombres</th>
           <th>Apellidos</th>
           <th>Curso</th>
+          <th>Tipo</th>
           <th>Grupo</th>
           <th>Estado</th>
         </tr>
@@ -2921,6 +2927,7 @@ function renderCsvPreview(rows) {
               <td>${escapeHtml(row.nombres)}</td>
               <td>${escapeHtml(row.apellidos)}</td>
               <td>${escapeHtml(row.curso)}</td>
+              <td>${escapeHtml(row.tipo || 'Estudiante')}</td>
               <td>${escapeHtml(groupForCourse(row.curso) || 'No configurado')}</td>
               <td>${ok ? '✓ Válido' : '✕ Incompleto'}</td>
             </tr>
@@ -3053,7 +3060,7 @@ adminElements.importConfirm.addEventListener('click', async () => {
 
       const student = createStudent({
         id: studentIdFromNumber(nextNumber),
-        playerType: 'Estudiante',
+        playerType: row.tipo === 'Profesor' ? 'Profesor' : 'Estudiante',
         firstName: row.nombres,
         lastName: row.apellidos,
         course,
