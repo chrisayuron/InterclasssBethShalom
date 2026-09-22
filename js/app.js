@@ -1,4 +1,4 @@
-console.log('[INVICTUS 2026] V21.3 — equipos por curso y deporte, carga masiva de profesores y categoría Profesional.');
+console.log('[INVICTUS 2026] V21.4 — equipos por curso y deporte, carga masiva de profesores y categoría Profesional.');
 import { createAutomaticPlayerCutout } from './services/player-photo-cutout.js';
 import { generateRoundRobinStage } from './tournament.js';
 
@@ -282,6 +282,14 @@ function teamDisciplineName(id) {
   return rule?.name || id || '—';
 }
 
+function traditionalTeamName(disciplineId, course) {
+  const rule = tournamentDisciplineFor(disciplineId);
+  const cleanCourse = String(course || '').trim();
+  return rule?.type === 'Deporte' && cleanCourse && rule.name
+    ? `${cleanCourse} - ${rule.name}`
+    : '';
+}
+
 function syncTraditionalTeamName() {
   const nameInput = document.getElementById('teamName');
   const disciplineInput = document.getElementById('teamDiscipline');
@@ -294,7 +302,7 @@ function syncTraditionalTeamName() {
 
   if (isTraditional) {
     const disciplineName = rule?.name || '';
-    nameInput.value = course && disciplineName ? `${course} - ${disciplineName}` : '';
+    nameInput.value = traditionalTeamName(disciplineInput.value, course);
     nameInput.readOnly = true;
     nameInput.placeholder = 'Se genera automáticamente según el curso y el deporte';
   } else {
@@ -406,7 +414,7 @@ function renderTeamAdmin() {
         rows.push(`
           <tr>
             <td><strong>${escapeHtml(team.id)}</strong></td>
-            <td>${escapeHtml(team.name)}</td>
+            <td>${escapeHtml(traditionalTeamName(rule.key, course) || team.name)}</td>
             <td>${escapeHtml(rule.name)}</td>
             <td>${escapeHtml(course)}</td>
             <td>${team.members.length}</td>
@@ -705,6 +713,34 @@ function closeTeamForm() {
   document.getElementById('teamModal')?.classList.remove('open');
 }
 
+async function repairTraditionalTeamNames(teams) {
+  const updates = (teams || []).filter(team => {
+    const rule = tournamentDisciplineFor(team.disciplineId);
+    if (rule?.type !== 'Deporte') return false;
+    const course = team.course || inferTeamCourse(team);
+    const expected = traditionalTeamName(rule.key, course);
+    return Boolean(expected) && team.name !== expected;
+  });
+
+  if (!updates.length) return teams;
+
+  console.log(`[INVICTUS] Corrigiendo ${updates.length} nombre(s) de equipo tradicional(es) al formato curso - disciplina.`);
+  const repaired = [];
+  for (const team of teams) {
+    const rule = tournamentDisciplineFor(team.disciplineId);
+    const course = team.course || inferTeamCourse(team);
+    const expected = rule?.type === 'Deporte' ? traditionalTeamName(rule.key, course) : '';
+    if (expected && team.name !== expected) {
+      const updated = { ...team, name: expected, course: course || team.course };
+      await saveTeam(updated);
+      repaired.push(updated);
+    } else {
+      repaired.push(team);
+    }
+  }
+  return repaired;
+}
+
 async function loadAdminTeams() {
   const body = document.getElementById('teamAdminBody');
   if (body) {
@@ -716,7 +752,7 @@ async function loadAdminTeams() {
   }
 
   try {
-    adminTeams = (await getTeams()).map(normalizeTeam);
+    adminTeams = await repairTraditionalTeamNames((await getTeams()).map(normalizeTeam));
     // Mantener sincronizada la representación pública en la sesión actual.
     // Los partidos consultan los IDs de los equipos y no deben conservar
     // nombres antiguos después de una modificación administrativa.
@@ -810,7 +846,7 @@ document.getElementById('teamForm')?.addEventListener('submit', async event => {
   const course = document.getElementById('teamCourse')?.value || document.getElementById('teamGroup').value;
   const rule = tournamentDisciplineFor(disciplineId);
   const name = rule?.type === 'Deporte'
-    ? String(course || '').trim()
+    ? traditionalTeamName(disciplineId, course)
     : document.getElementById('teamName').value.trim();
   const active = document.getElementById('teamActive').checked;
   const members = [...document.querySelectorAll('#teamMembers input[data-team-member]:checked')].map(input => input.value);
@@ -873,9 +909,11 @@ document.getElementById('teamForm')?.addEventListener('submit', async event => {
       }
     }
 
-    const duplicateName = adminTeams.find(team =>
-      team.id !== editId && team.active !== false && normalizeLookup(team.name) === normalizeLookup(name)
-    );
+    const duplicateName = rule.type === 'Videojuego'
+      ? adminTeams.find(team =>
+          team.id !== editId && team.active !== false && normalizeLookup(team.name) === normalizeLookup(name)
+        )
+      : null;
     if (duplicateName) {
       window.alert(`Ya existe un equipo con el nombre "${duplicateName.name}". Usa un nombre diferente.`);
       return;
@@ -892,7 +930,9 @@ document.getElementById('teamForm')?.addEventListener('submit', async event => {
       const latestSameCourseTeam = latestTeams.find(team => team.id !== editId && team.active !== false && canonicalDisciplineId(team.disciplineId) === rule.key && normalizeLookup(team.course || inferTeamCourse(team)) === normalizeLookup(course));
       if (latestSameCourseTeam) throw new Error(`Ya existe un equipo para ${course} en esta disciplina: ${latestSameCourseTeam.name}. Cada curso puede tener un solo equipo por deporte.`);
     }
-    const latestDuplicateName = latestTeams.find(team => team.id !== editId && team.active !== false && normalizeLookup(team.name) === normalizeLookup(name));
+    const latestDuplicateName = rule.type === 'Videojuego'
+      ? latestTeams.find(team => team.id !== editId && team.active !== false && normalizeLookup(team.name) === normalizeLookup(name))
+      : null;
     if (latestDuplicateName) throw new Error(`Ya existe un equipo con el nombre "${latestDuplicateName.name}". Usa un nombre diferente.`);
 
     const selectedKeys = new Set(members.map(normalizeLookup));
