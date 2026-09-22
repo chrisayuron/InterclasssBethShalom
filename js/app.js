@@ -1106,8 +1106,8 @@ function renderPublicMatches() {
 
   list.innerHTML = matches.map(m => {
     const discipline = disciplineById(m.disciplineId)?.name || m.disciplineId || '—';
-    const a = matchParticipantName(m.teamAId);
-    const b = matchParticipantName(m.teamBId);
+    const a = matchParticipantDisplayName(m.teamAId);
+    const b = matchParticipantDisplayName(m.teamBId);
     const hasScore = m.scoreA !== null && m.scoreB !== null;
     const schedule = m.date ? `${m.date}${m.time ? ` · ${m.time}` : ''}` : 'Fecha por definir';
     return `<article class="public-match-card">
@@ -1116,9 +1116,9 @@ function renderPublicMatches() {
         <span>${escapeHtml(m.status)}</span>
       </div>
       <div class="public-match-teams">
-        <strong>${escapeHtml(a)}</strong>
+        <strong title="${escapeHtml(matchParticipantName(m.teamAId))}">${escapeHtml(a)}</strong>
         <div class="public-match-score">${hasScore ? `<b>${m.scoreA}</b><span>VS</span><b>${m.scoreB}</b>` : '<span class="score-pending">VS</span>'}</div>
-        <strong>${escapeHtml(b)}</strong>
+        <strong title="${escapeHtml(matchParticipantName(m.teamBId))}">${escapeHtml(b)}</strong>
       </div>
       <div class="public-match-meta">${escapeHtml(m.competitionGroup || 'Videojuegos')}${m.round ? ` · ${escapeHtml(m.round)}` : ''} · ${escapeHtml(schedule)}</div>
       ${hasScore && disciplineStatKind(disciplineById(m.disciplineId)) === 'football' ? `<div class="public-match-goals-block"><div class="public-match-goals-title">GOLES DEL PARTIDO</div>${renderGoalEventsPublic(m)}</div>` : ''}
@@ -1155,6 +1155,29 @@ function normalizeMatch(match) {
 
 function footballGoals(match) {
   return Array.isArray(match?.events) ? match.events.filter(e => e?.type === 'goal' && e?.playerId) : [];
+}
+
+function matchParticipantDisplayName(id) {
+  const fullName = matchParticipantName(id);
+  const raw = String(id || '').trim();
+  if (raw.startsWith('PAIR:')) return fullName;
+
+  const key = normalizeLookup(id);
+  const team = adminTeams.find(t => normalizeLookup(t.id) === key)
+    || publicData.teams.find(t => normalizeLookup(t.id) === key);
+  if (!team) return fullName;
+
+  const rule = tournamentDisciplineFor(team.disciplineId);
+  if (rule?.type !== 'Deporte') return fullName;
+
+  const course = String(team.course || inferTeamCourse(team) || '').trim();
+  if (!course) return fullName;
+
+  const abbreviation = ({ futbol: 'F', voleibol: 'V', baloncesto: 'B' })[rule.key] || '';
+  if (!abbreviation) return fullName;
+
+  // Nombre completo conservado internamente; presentación compacta para partidos.
+  return `${course}${abbreviation}`;
 }
 
 function matchParticipantName(id) {
@@ -1202,7 +1225,7 @@ function renderMatchAdmin() {
     <td><strong>${escapeHtml(m.id)}</strong></td>
     <td>${escapeHtml(disciplineById(m.disciplineId)?.name || m.disciplineId)}</td>
     <td>${escapeHtml(m.competitionGroup || 'Videojuegos')}${m.round ? `<br><small>${escapeHtml(m.round)}</small>` : ''}</td>
-    <td>${escapeHtml(matchParticipantName(m.teamAId))} <strong>vs</strong> ${escapeHtml(matchParticipantName(m.teamBId))}</td>
+    <td>${escapeHtml(matchParticipantDisplayName(m.teamAId))} <strong>vs</strong> ${escapeHtml(matchParticipantDisplayName(m.teamBId))}</td>
     <td>${escapeHtml(m.date || 'Por definir')}</td>
     <td>${escapeHtml(m.status)}</td>
     <td>${m.scoreA ?? '—'} · ${m.scoreB ?? '—'}</td>
@@ -1349,7 +1372,7 @@ function openScheduleMatchForm(match) {
   if (!modal || !match) return;
   document.getElementById('scheduleMatchId').value = match.id;
   document.getElementById('scheduleMatchDate').value = match.date || '';
-  document.getElementById('scheduleMatchLabel').textContent = `${matchParticipantName(match.teamAId)} vs ${matchParticipantName(match.teamBId)} · ${disciplineById(match.disciplineId)?.name || match.disciplineId}`;
+  document.getElementById('scheduleMatchLabel').textContent = `${matchParticipantDisplayName(match.teamAId)} vs ${matchParticipantDisplayName(match.teamBId)} · ${disciplineById(match.disciplineId)?.name || match.disciplineId}`;
   modal.classList.add('open');
 }
 function closeScheduleMatchForm() { document.getElementById('scheduleMatchModal')?.classList.remove('open'); }
@@ -1434,7 +1457,7 @@ function resultDisciplineKind() {
 function resultTeams() {
   const match = adminMatches.find(m => normalizeLookup(m.id) === normalizeLookup(resultEditingMatchId));
   if (!match) return [];
-  return [{ side:'A', id:match.teamAId, name:matchParticipantName(match.teamAId) }, { side:'B', id:match.teamBId, name:matchParticipantName(match.teamBId) }];
+  return [{ side:'A', id:match.teamAId, name:matchParticipantDisplayName(match.teamAId) }, { side:'B', id:match.teamBId, name:matchParticipantDisplayName(match.teamBId) }];
 }
 
 function resultTeamPlayers(side) {
@@ -1552,7 +1575,7 @@ document.getElementById('drawDiscipline')?.addEventListener('change', event => {
   const cards=stage.groups.map(group=>{
     const pairs=pendingDrawMatches.filter(m=>m.competitionGroup===group.competitionGroup);
     const rounds=[...new Set(pairs.map(m=>m.round))].sort((a,b)=>Number(a.replace(/\D/g,''))-Number(b.replace(/\D/g,'')));
-    const roundsHtml=rounds.map(round=>`<div class="draw-round-block"><strong>${escapeHtml(round)}</strong>${pairs.filter(m=>m.round===round).map((m,i)=>`<div class="draw-pair-row"><span>${i+1}</span><strong>${escapeHtml(matchParticipantName(m.teamAId))}</strong><b>VS</b><strong>${escapeHtml(matchParticipantName(m.teamBId))}</strong></div>`).join('')}</div>`).join('');
+    const roundsHtml=rounds.map(round=>`<div class="draw-round-block"><strong>${escapeHtml(round)}</strong>${pairs.filter(m=>m.round===round).map((m,i)=>`<div class="draw-pair-row"><span>${i+1}</span><strong>${escapeHtml(matchParticipantDisplayName(m.teamAId))}</strong><b>VS</b><strong>${escapeHtml(matchParticipantDisplayName(m.teamBId))}</strong></div>`).join('')}</div>`).join('');
     const label=isVideo?'Parejas':(group.competitionGroup || 'Categoría');
     return `<div class="draw-group-card"><div class="draw-group-card-head"><strong>${escapeHtml(label)}</strong><small>${group.participants.length} participante${group.participants.length===1?'':'s'} · ida y vuelta</small></div>${roundsHtml}</div>`;
   }).join('');
@@ -1637,7 +1660,7 @@ function renderCalendarPreview() {
   if(!pending.length) { preview.innerHTML='<div class="empty">No hay partidos de clasificación pendientes de programación.</div>'; return; }
   const assignments=buildAutomaticCalendarAssignments(pending,start);
   const byDate={}; assignments.forEach(a=>(byDate[a.date]??=[]).push(a));
-  preview.innerHTML=Object.entries(byDate).map(([date,items])=>`<div class="draw-group-card"><div class="draw-group-card-head"><strong>${escapeHtml(date)}</strong><small>${items.length} partido${items.length===1?'':'s'}</small></div>${items.map(a=>{const m=adminMatches.find(x=>x.id===a.id);return `<div class="draw-pair-row"><span>${escapeHtml(a.weekday)}</span><strong>${escapeHtml(matchParticipantName(m.teamAId))}</strong><b>VS</b><strong>${escapeHtml(matchParticipantName(m.teamBId))}</strong></div>`}).join('')}</div>`).join('');
+  preview.innerHTML=Object.entries(byDate).map(([date,items])=>`<div class="draw-group-card"><div class="draw-group-card-head"><strong>${escapeHtml(date)}</strong><small>${items.length} partido${items.length===1?'':'s'}</small></div>${items.map(a=>{const m=adminMatches.find(x=>x.id===a.id);return `<div class="draw-pair-row"><span>${escapeHtml(a.weekday)}</span><strong>${escapeHtml(matchParticipantDisplayName(m.teamAId))}</strong><b>VS</b><strong>${escapeHtml(matchParticipantDisplayName(m.teamBId))}</strong></div>`}).join('')}</div>`).join('');
 }
 
 document.getElementById('btnScheduleCalendar')?.addEventListener('click',()=>{
