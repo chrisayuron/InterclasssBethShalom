@@ -1,4 +1,4 @@
-console.log('[INVICTUS 2026] V21.4 — equipos por curso y deporte, carga masiva de profesores y categoría Profesional.');
+console.log('[INVICTUS 2026] V21.6 — responsive design para móviles, tabletas y escritorio.');
 import { createAutomaticPlayerCutout } from './services/player-photo-cutout.js';
 import { generateRoundRobinStage } from './tournament.js';
 
