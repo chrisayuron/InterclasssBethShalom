@@ -108,10 +108,14 @@
     </div>
   </div>
 
-  <div class="filters">
-    <select id="publicMatchDisciplineFilter">
+  <div class="match-discipline-filter-wrap">
+    <div class="match-discipline-filter-label">Disciplina</div>
+    <div id="publicMatchDisciplineButtons" class="match-discipline-buttons" aria-label="Filtrar partidos por disciplina"></div>
+    <select id="publicMatchDisciplineFilter" class="match-discipline-select-compat" aria-hidden="true" tabindex="-1">
       <option value="">Todas las disciplinas</option>
     </select>
+  </div>
+  <div class="filters match-status-filter">
     <select id="publicMatchStatusFilter">
       <option value="">Todos los estados</option>
       <option value="Por programar">Por programar</option>

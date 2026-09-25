@@ -2667,3 +2667,17 @@ button, input, select, textarea { max-width: 100%; }
     font-size: 8px;
   }
 }
+
+/* V21.7 — filtro visual de partidos por disciplina */
+.match-discipline-filter-wrap{margin:20px 0 12px;}
+.match-discipline-filter-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#63748a;margin-bottom:9px;}
+.match-discipline-buttons{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:thin;}
+.match-discipline-button{flex:0 0 auto;border:1px solid #d5deec;background:#fff;color:var(--navy);border-radius:10px;padding:9px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .16s ease;}
+.match-discipline-button:hover{border-color:var(--navy);transform:translateY(-1px);}
+.match-discipline-button.active{background:var(--navy);color:#fff;border-color:var(--navy);box-shadow:0 4px 10px rgba(12,37,71,.14);}
+.match-discipline-select-compat{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;}
+.match-status-filter{margin-top:10px;margin-bottom:18px;}
+@media (max-width:600px){
+  .match-discipline-buttons{flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
+  .match-discipline-button{padding:8px 12px;font-size:12px;}
+}

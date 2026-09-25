@@ -1,3 +1,4 @@
+console.info('[INVICTUS 2026] V21.7 — filtros y orden cronológico de Partidos.');
 console.log('[INVICTUS 2026] V21.6 — responsive design para móviles, tabletas y escritorio.');
 import { createAutomaticPlayerCutout } from './services/player-photo-cutout.js';
 import { generateRoundRobinStage } from './tournament.js';
@@ -1063,18 +1064,60 @@ let pendingDrawMatches = [];
 
 
 
+let publicMatchDisciplineSelection = '';
+
+function matchDateSortValue(match) {
+  if (!match?.date) return Number.POSITIVE_INFINITY;
+  const value = new Date(`${match.date}T12:00:00`).getTime();
+  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+}
+
+function matchTimeSortValue(match) {
+  const raw = String(match?.time || '').trim().toUpperCase();
+  if (!raw) return Number.POSITIVE_INFINITY;
+  const m = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/);
+  if (!m) return Number.POSITIVE_INFINITY;
+  let hour = Number(m[1]);
+  const minute = Number(m[2] || 0);
+  if (m[3] === 'PM' && hour < 12) hour += 12;
+  if (m[3] === 'AM' && hour === 12) hour = 0;
+  return hour * 60 + minute;
+}
+
+function sortMatchesChronologically(matches) {
+  return [...matches].sort((a, b) => {
+    const dateDiff = matchDateSortValue(a) - matchDateSortValue(b);
+    if (dateDiff !== 0) return dateDiff;
+    const timeDiff = matchTimeSortValue(a) - matchTimeSortValue(b);
+    if (timeDiff !== 0) return timeDiff;
+    return String(a.id || '').localeCompare(String(b.id || ''), 'es');
+  });
+}
+
+function renderMatchDisciplineButtons() {
+  const wrap = document.getElementById('publicMatchDisciplineButtons');
+  if (!wrap) return;
+  const options = [{ id: '', name: 'Todos' }, ...effectiveDisciplines()];
+  wrap.innerHTML = options.map(d => `
+    <button type="button"
+      class="match-discipline-button ${publicMatchDisciplineSelection === d.id ? 'active' : ''}"
+      data-public-discipline="${escapeHtml(d.id)}">
+      ${escapeHtml(d.name)}
+    </button>
+  `).join('');
+}
+
 function renderPublicMatches() {
   const list = document.getElementById('publicMatchesList');
   if (!list) return;
 
-  const disciplineFilter = document.getElementById('publicMatchDisciplineFilter')?.value || '';
+  const disciplineFilter = publicMatchDisciplineSelection;
   const statusFilter = document.getElementById('publicMatchStatusFilter')?.value || '';
 
-  const matches = (publicData.matches || [])
+  const matches = sortMatchesChronologically((publicData.matches || [])
     .map(normalizeMatch)
-    .filter(m => !disciplineFilter || m.disciplineId === disciplineFilter)
-    .filter(m => !statusFilter || m.status === statusFilter)
-    .sort((a,b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+    .filter(m => !disciplineFilter || canonicalDisciplineId(m.disciplineId) === canonicalDisciplineId(disciplineFilter))
+    .filter(m => !statusFilter || m.status === statusFilter));
 
   const all = (publicData.matches || []).map(normalizeMatch);
   const setText = (id, value) => {
@@ -1088,14 +1131,8 @@ function renderPublicMatches() {
   setText('publicMatchesFinished', all.filter(m => m.status === 'Finalizado').length);
 
   const ds = document.getElementById('publicMatchDisciplineFilter');
-  if (ds) {
-    const old = ds.value;
-    ds.innerHTML = '<option value="">Todas las disciplinas</option>' +
-      effectiveDisciplines()
-        .map(d => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)}</option>`)
-        .join('');
-    if ([...ds.options].some(o => o.value === old)) ds.value = old;
-  }
+  if (ds) ds.value = publicMatchDisciplineSelection;
+  renderMatchDisciplineButtons();
 
   if (!matches.length) {
     list.innerHTML = all.length
@@ -1219,7 +1256,7 @@ function renderGoalEventsPublic(match) {
 function renderMatchAdmin() {
   const body = document.getElementById('matchAdminBody');
   if (!body) return;
-  const rows = [...adminMatches].sort((a,b) => `${a.competitionGroup} ${a.id}`.localeCompare(`${b.competitionGroup} ${b.id}`, 'es'));
+  const rows = sortMatchesChronologically(adminMatches);
   if (!rows.length) { body.innerHTML = '<tr><td colspan="8" class="empty">No hay partidos registrados todavía.</td></tr>'; return; }
   body.innerHTML = rows.map(m => `<tr>
     <td><strong>${escapeHtml(m.id)}</strong></td>
@@ -1626,6 +1663,52 @@ document.getElementById('drawMatchesRun')?.addEventListener('click', async () =>
   }
 });
 
+function schedulingBlockForCourse(course) {
+  const key = normalizeLookup(course).replace(/°/g, '').replace(/\s+/g, '');
+  if (['0','0p','0k','0t','1','2','3','4','5'].includes(key)) return 'primaria';
+  if (['6','7','8','9','10','11','profesores','profesor'].includes(key)) return 'bachillerato';
+  return null;
+}
+
+function schedulingBlockForParticipant(participantId) {
+  const key = normalizeLookup(participantId);
+  const team = adminTeams.find(t => normalizeLookup(t.id) === key)
+    || publicData.teams.find(t => normalizeLookup(t.id) === key);
+
+  if (team) {
+    const direct = schedulingBlockForCourse(team.course || inferTeamCourse(team));
+    if (direct) return direct;
+
+    const memberBlocks = (team.members || []).map(id => {
+      const student = adminStudents.find(s => normalizeLookup(s.id) === normalizeLookup(id))
+        || publicData.players.find(s => normalizeLookup(s.id) === normalizeLookup(id));
+      return schedulingBlockForCourse(
+        student?.course || (student?.playerType === 'Profesor' ? 'Profesores' : '')
+      );
+    }).filter(Boolean);
+
+    if (memberBlocks.length && memberBlocks.every(b => b === memberBlocks[0])) return memberBlocks[0];
+    return memberBlocks[0] || null;
+  }
+
+  const student = adminStudents.find(s => normalizeLookup(s.id) === key)
+    || publicData.players.find(s => normalizeLookup(s.id) === key);
+
+  return schedulingBlockForCourse(
+    student?.course || (student?.playerType === 'Profesor' ? 'Profesores' : '')
+  );
+}
+
+function schedulingBlockForMatch(match) {
+  const blocks = [
+    schedulingBlockForParticipant(match.teamAId),
+    schedulingBlockForParticipant(match.teamBId)
+  ].filter(Boolean);
+
+  if (blocks.length && blocks.every(b => b === blocks[0])) return blocks[0];
+  return blocks[0] || null;
+}
+
 function buildAutomaticCalendarAssignments(matches, startDate) {
   const assignments=[];
   const slots=new Map();
@@ -1641,7 +1724,20 @@ function buildAutomaticCalendarAssignments(matches, startDate) {
       const key=`${match.disciplineId}|${cursor}`;
       const dayMatches=slots.get(key)||[];
       const category=match.competitionGroup||'';
-      const allowed=weekday===3 ? dayMatches.length===0 : [1,5].includes(weekday) ? !dayMatches.some(m=>(m.competitionGroup||'')===category) : dayMatches.length<1;
+      const block=schedulingBlockForMatch(match);
+      const blockMatches=block ? dayMatches.filter(m => schedulingBlockForMatch(m) === block) : dayMatches;
+
+      const allowed = block
+        ? blockMatches.length === 0 &&
+          (![1,5].includes(weekday) || !blockMatches.some(m => (m.competitionGroup||'') === category))
+        : (
+            weekday===3
+              ? dayMatches.length===0
+              : [1,5].includes(weekday)
+                ? !dayMatches.some(m=>(m.competitionGroup||'')===category)
+                : dayMatches.length<1
+          );
+
       if(allowed) break;
       const d=new Date(`${cursor}T12:00:00`); d.setDate(d.getDate()+7); cursor=formatLocalDate(d);
     }
@@ -1703,15 +1799,30 @@ document.getElementById('scheduleMatchForm')?.addEventListener('submit', async e
     window.alert(`Esta disciplina solo puede programarse los ${calendarRuleLabel(discipline)}.`);
     return;
   }
-  const sameDay=adminMatches.filter(m=>m.id!==match.id && m.date===date && sameDiscipline(m.disciplineId,match.disciplineId));
-  if(expectedDay===3 && sameDay.length>=1) {
-    window.alert('El reglamento establece un solo partido de Vóleibol por fecha.');
+  const sameDay=adminMatches.filter(
+    m => m.id!==match.id && m.date===date && sameDiscipline(m.disciplineId,match.disciplineId)
+  );
+  const block=schedulingBlockForMatch(match);
+  const sameBlockDay=block
+    ? sameDay.filter(m => schedulingBlockForMatch(m) === block)
+    : sameDay;
+
+  if(sameBlockDay.length >= 1) {
+    const label = block === 'primaria' ? 'Primaria'
+      : block === 'bachillerato' ? 'Bachillerato'
+      : 'este bloque';
+    window.alert(
+      `Ya existe un partido de ${discipline?.name || 'esta disciplina'} programado para esta fecha en el bloque ${label}.`
+    );
     return;
   }
+
   if([1,5].includes(expectedDay)) {
     const category=match.competitionGroup || '';
-    if(category && sameDay.some(m=>(m.competitionGroup||'')===category)) {
-      window.alert(`Ya existe un partido de ${category} programado para esta fecha en ${discipline?.name || 'esta disciplina'}.`);
+    if(category && sameBlockDay.some(m => (m.competitionGroup||'') === category)) {
+      window.alert(
+        `Ya existe un partido de ${category} programado para esta fecha en ${discipline?.name || 'esta disciplina'} para el mismo bloque.`
+      );
       return;
     }
   }
@@ -1846,6 +1957,20 @@ function experienceProgress(experience){
   return Math.min(100, Math.round((1 - Math.exp(-experience / 1800)) * 100));
 }
 function initials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join(''); }
+
+document.getElementById('publicMatchDisciplineButtons')?.addEventListener('click', event => {
+  const button = event.target.closest('[data-public-discipline]');
+  if (!button) return;
+  publicMatchDisciplineSelection = button.dataset.publicDiscipline || '';
+  renderPublicMatches();
+});
+
+document.getElementById('publicMatchStatusFilter')?.addEventListener('change', renderPublicMatches);
+
+document.getElementById('publicMatchDisciplineFilter')?.addEventListener('change', event => {
+  publicMatchDisciplineSelection = event.target.value || '';
+  renderPublicMatches();
+});
 
 /* ---------------- NAV ---------------- */
 document.querySelectorAll('#mainNav button').forEach(btn => {
